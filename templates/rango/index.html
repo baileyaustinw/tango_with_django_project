@@ -1,26 +1,55 @@
-<!DOCTYPE html>
-
+{% extends 'rango/base.html' %}
 {% load staticfiles %}
 
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Rango</title>
-</head>
-<body>
+{% block title_block %}
+    Home
+{% endblock %}
 
-    <h1>Rango says...</h1>
-
+{% block body_block %}
     <div>
-        hey there partner! <br/>
-        <strong>{{ boldmessage }}</strong><br/>
+        <h1>Rango says...
+
+        {% if user.is_authenticated %}
+            howdy {{ user.username }}!
+        {% else %}
+            hey there partner!
+        {% endif %}
+
+        </h1>
+
+        {% if categories %}
+        <h2>Most liked categories</h2>
+        <ul>
+            {% for category in categories %}
+            <li><a href="{% url 'category' category.slug %}">{{ category.name }}</a></li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'categories' %}">Show all categories</a>
+        {% else %}
+            <strong>There are no categories present.</strong>
+        {% endif %}
     </div>
 
     <div>
-        <a href="/rango/about/">About</a><br/>
+        {% if pages %}
+        <h2>Most viewed pages</h2>
+        <ul>
+            {% for page in pages %}
+            <li><a href="{{ page.url }}">{{ page.title }}</a></li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'pages' %}">Show all pages</a>
+        {% else %}
+            <strong>There are no pages present.</strong>
+        {% endif %}
+    </div>
+
+    <div>
+        <h2>Visits: {{ visits }}</h2>
+    </div>
+
+    <div>
         <img src="{{ MEDIA_URL }}/1_63C.jpg" alt="Venieri" />
-        <img src="{% static "rango/images/rango.jpg" %}" alt="Picture of Rango" />
+        <img src="{% static "rango/images/rango.jpg" %}" style="width: 500px; height: 500px" alt="Picture of Rango" />
     </div>
-
-</body>
-</html>
+{% endblock %}

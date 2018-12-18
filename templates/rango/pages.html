@@ -1,0 +1,19 @@
+{% extends 'rango/base.html' %}
+{% load staticfiles %}
+
+{% block title_block %}
+    Pages
+{% endblock %}
+
+{% block body_block %}
+    <h2>All Pages</h2>
+    {% if pages %}
+        <ul>
+            {% for page in pages %}
+                <li><a href="{{ page.url }}">{{ page.title }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <b>There are no pages to show.</b>
+    {% endif %}
+{% endblock %}
