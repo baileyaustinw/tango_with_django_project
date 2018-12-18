@@ -1,0 +1,2 @@
+bcrypt
+Django>=2.1.4
