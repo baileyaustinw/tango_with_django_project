@@ -1,19 +1,23 @@
 {% extends 'rango/base.html' %}
 {% load staticfiles %}
 
-{% block title_block %}
-    Categories
-{% endblock %}
+{% block title_block %}Categories{% endblock %}
 
 {% block body_block %}
     <h2>All Categories</h2>
     {% if categories %}
-        <ul>
+        <div class="list-group">
             {% for category in categories %}
-                <li><a href="{% url 'category' category.slug %}">{{ category.name }}</a></li>
+                <div class="list-group-item">
+                    <h4 class="list-group-item-heading">
+                        <a href="{% url 'category' category.slug %}">{{ category.name }}</a>
+                    </h4>
+                    <p class="list-group-item-text">{{ category.name }} has <strong>{{ category.likes }}</strong>
+                        likes and <strong>{{ category.views }}</strong> views.</p>
+                </div>
             {% endfor %}
-        </ul>
+        </div>
     {% else %}
-        <b>There are no categories to show.</b>
+        <bold>No categories to show.</bold>
     {% endif %}
 {% endblock %}

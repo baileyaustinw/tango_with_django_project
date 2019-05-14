@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rango',
+    'registration',
 ]
 
 MIDDLEWARE = [
@@ -113,8 +114,6 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
 ]
 
-LOGIN_URL = '/rango/login/'
-
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
@@ -147,3 +146,16 @@ MEDIA_DIR = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = MEDIA_DIR
+
+# Django Registration Settings
+# If true, users can register
+REGISTRATION_OPEN = True
+# One week activation window
+ACCOUNT_ACTIVATION_DAYS = 7
+# If true, the user will automatically be logged in
+REGISTRATION_AUTO_LOGIN = True
+# Page displayed after successful login
+LOGIN_REDIRECT_URL = '/rango/'
+# Page users are directed to if they are not logged in
+# and are trying to access pages that require authentication
+LOGIN_URL = '/accounts/login/'

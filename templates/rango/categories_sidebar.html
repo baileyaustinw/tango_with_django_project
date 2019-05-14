@@ -1,0 +1,9 @@
+{% block body_block %}
+    {% if categories %}
+        {% for category in categories %}
+            <p><a href="{% url 'category' category.slug %}">{{ category.name }}</a></p>
+        {% endfor %}
+    {% else %}
+        <b>There are no categories to show.</b>
+    {% endif %}
+{% endblock %}

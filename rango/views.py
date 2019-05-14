@@ -1,13 +1,16 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from tango_with_django_project.settings import MEDIA_URL
-from rango.models import Category, Page
+from rango.models import Category, Page, UserProfile
 from rango.forms import PageForm, CategoryForm, UserForm, UserProfileForm
 from django.urls import reverse
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from rango.functions import visitor_cookie_handler
+from rango.functions import visitor_cookie_handler, get_category_list
+from rango.webhose_search import run_query
+from django.contrib.auth.models import User
+from django.shortcuts import redirect
 
 
 def index(request):
@@ -30,12 +33,22 @@ def show_category(request, category_name_slug):
 
     try:
         category = Category.objects.get(slug=category_name_slug)
-        pages = Page.objects.filter(category=category)
+        pages = Page.objects.filter(category=category).order_by('-views')
         context_dict['pages'] = pages
         context_dict['category'] = category
     except Category.DoesNotExist:
         context_dict['pages'] = None
         context_dict['category'] = None
+
+    context_dict['query'] = category.name
+    results_list = []
+
+    if request.method == 'POST':
+        query = request.POST['query'].strip()
+        if query:
+            results_list = run_query(query)
+            context_dict['query'] = query
+            context_dict['results_list'] = results_list
 
     return render(request, 'rango/category.html', context_dict)
 
@@ -86,6 +99,36 @@ def add_category(request):
 
 
 @login_required
+def like_category(request):
+    cat_id = None
+
+    if request.method == 'GET':
+        cat_id = request.GET['category_id']
+        likes = 0
+
+        if cat_id:
+            cat = Category.objects.get(id=int(cat_id))
+            if cat:
+                likes = cat.likes + 1
+                cat.likes = likes
+                cat.save()
+
+    return HttpResponse(likes)
+
+
+def suggest_category(request):
+    cat_list = []
+    starts_with = ''
+
+    if request.method == 'GET':
+        starts_with = request.GET['suggestion']
+
+    cat_list = get_category_list(8, starts_with)
+
+    return render(request, 'rango/categories_sidebar.html', {'categories': cat_list})
+
+
+@login_required
 def add_page(request, category_name_slug):
     try:
         category = Category.objects.get(slug=category_name_slug.lower())
@@ -111,6 +154,27 @@ def add_page(request, category_name_slug):
 
     context_dict = {'form': form, 'category': category}
     return render(request, 'rango/add_page.html', context_dict)
+
+
+@login_required
+def auto_add_page(request):
+    cat_id = None
+    url = None
+    title = None
+    context_dict = {}
+
+    if request.method == 'GET':
+        cat_id = request.GET['category_id']
+        url = request.GET['url']
+        title = request.GET['title']
+
+        if cat_id:
+            category = Category.objects.get(id=int(cat_id))
+            p = Page.objects.get_or_create(category=category, title=title, url=url)
+            pages = Page.objects.filter(category=category).order_by('-views')
+            context_dict['pages'] = pages
+
+    return render(request, 'rango/page_list.html', context_dict)
 
 
 def register(request):
@@ -163,6 +227,27 @@ def register(request):
                    'registered': registered})
 
 
+@login_required
+def register_profile(request):
+    form = UserProfileForm()
+
+    if request.method == 'POST':
+        profile_form = UserProfileForm(request.POST, request.FILES)
+
+        if profile_form.is_valid():
+            profile = profile_form.save(commit=False)
+            profile.user = request.user
+            profile.save()
+
+            return HttpResponseRedirect(reverse('index'))
+        else:
+            print(form.errors)
+
+    context_dict = {'form': form}
+
+    return render(request, 'registration/profile_registration_form.html', context_dict)
+
+
 def user_login(request):
     # if a POST method try to process data
     if request.method == 'POST':
@@ -207,6 +292,87 @@ def user_login(request):
     else:
         # no context variables to pass to template
         return render(request, 'rango/login.html', {})
+
+
+def search(request):
+    results_list = []
+
+    if request.method == 'POST':
+        query = request.POST['query'].strip()
+        cat_id = request.POST['category']
+        category = Category.objects.get(id=int(cat_id))
+        print('query:' + query)
+        print('cat_id:' + cat_id)
+        if query:
+            results_list = run_query(query)
+
+    context_dict = {'results_list': results_list,
+                    'query': query,
+                    'category': category}
+
+    return render(request, 'rango/category.html', context_dict)
+
+
+@login_required
+def profile(request, username):
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return HttpResponseRedirect(reverse('index'))
+
+    context_dict = {}
+    profile = UserProfile.objects.get_or_create(user=user)[0]
+    form = UserProfileForm(
+        {'website': profile.website, 'picture': profile.picture}
+    )
+
+    if request.method == 'POST':
+        profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
+        if profile_form.is_valid():
+            profile_form.save(commit=True)
+
+            return HttpResponseRedirect(reverse('profile', args=(user.username,)))
+        else:
+            print(form.errors)
+
+    context_dict['form'] = form
+    context_dict['user_profile'] = profile
+    return render(request, 'rango/profile.html', context_dict)
+
+
+@login_required
+def profile_list(request):
+    context_dict = {}
+    profiles = UserProfile.objects.all()
+    context_dict['profiles'] = profiles
+    users = []
+
+    if profiles:
+        for profile in profiles:
+            users.append(User.objects.get(id=profile.user.id))
+
+    context_dict['users'] = users
+
+    return render(request, 'rango/profile_list.html', context_dict)
+
+
+def track_url(request):
+    page_id = None
+    url = '/rango/'
+
+    if request.method == 'GET':
+        if 'page_id' in request.GET:
+            page_id = request.GET['page_id']
+
+            try:
+                page = Page.objects.get(id=page_id)
+                page.views = page.views + 1
+                page.save()
+                url = page.url
+            except Page.DoesNotExist:
+                pass
+
+    return redirect(url)
 
 
 @login_required

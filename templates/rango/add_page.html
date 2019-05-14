@@ -9,7 +9,7 @@
     <a href="{% url 'category' category.slug %}">{{ category.slug }}</a>
     <h1>Add a page</h1>
     <div>
-        <form id="page_form" method="post" action="{% url 'add_page' category %}">
+        <form id="page_form" method="post" action="{% url 'add_page' category.slug %}">
             {% csrf_token %}
             {% for hidden in form.hidden_fields %}
                 {{ hidden }}

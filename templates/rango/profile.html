@@ -1,0 +1,43 @@
+{% extends 'rango/base.html' %}
+{% load staticfiles %}
+
+{% block title_block %}{{ user.username }}'s Profile{% endblock %}
+
+{% block body_block %}
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <h2 class="text-center">Your Profile</h2>
+                {% if user_profile %}
+                    <h4>Website</h4>
+                    <a href="{{ user_profile.website }}">{{ user_profile.website }}</a>
+                    <h4>Profile Picture</h4>
+                    <div class="col-sm-6 pl-0">
+                        {% if user_profile.picture %}
+                            <a href="{{ user_profile.picture.url }}"><img src="{{ user_profile.picture.url }}" alt="Profile picture" class="img-thumbnail"></a>
+                        {% else %}
+                            <small class="text-info">No profile picture.</small>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <small class="text-info">You have no information to show. You can use the form to add a website and profile picture.</small>
+                {% endif %}
+            </div>
+            <div class="col">
+                <h2 class="text-center">Edit Profile Information</h2>
+                <form role="form" id="profile_registration_form" method="post" action="." enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_website">Website:</label>
+                        <input type="url" name="website" id="id_website" class="form-control" placeholder="Website" />
+                    </div>
+                    <div class="form-group">
+                        <label for="id_picture">Picture:</label>
+                        <input type="file" name="picture" id="id_picture" class="form-control-file" />
+                    </div>
+                    <button type="submit" class="btn btn-primary form-control">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
