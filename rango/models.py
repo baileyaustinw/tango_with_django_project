@@ -1,6 +1,7 @@
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.contrib.auth.models import User
+import datetime
 
 
 class UserProfile(models.Model):
@@ -20,6 +21,9 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
+        if self.views < 0:
+            self.views = 0
+
         super(Category, self).save(*args, **kwargs)
 
     class Meta:
@@ -34,6 +38,20 @@ class Page(models.Model):
     title = models.CharField(max_length=128)
     url = models.URLField()
     views = models.IntegerField(default=0)
+    last_visit = models.DateField(null=True)
+    first_visit = models.DateField(null=True)
+
+    def save(self, *args, **kwargs):
+        if self.first_visit > datetime.date.today():
+            self.first_visit = datetime.date.today()
+
+        if self.last_visit > datetime.date.today():
+            self.last_visit = datetime.date.today()
+
+        if self.last_visit <= self.first_visit:
+            self.last_visit = self.first_visit
+
+        super(Page, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.title

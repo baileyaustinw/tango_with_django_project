@@ -11,6 +11,7 @@ from rango.functions import visitor_cookie_handler, get_category_list
 from rango.webhose_search import run_query
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
+import datetime
 
 
 def index(request):
@@ -146,6 +147,7 @@ def add_page(request, category_name_slug):
                 page = form.save(commit=False)
                 page.category = category
                 page.views = 0
+                page.first_visit = datetime.date.today()
                 page.save()
                 #return show_category(request, category_name_slug)
                 return HttpResponseRedirect(reverse('category', args=[category_name_slug.lower()]))
@@ -367,6 +369,7 @@ def track_url(request):
             try:
                 page = Page.objects.get(id=page_id)
                 page.views = page.views + 1
+                page.last_visit = datetime.date.today()
                 page.save()
                 url = page.url
             except Page.DoesNotExist:
